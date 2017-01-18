@@ -16,7 +16,7 @@ import voluptuous as vol
 
 from homeassistant.components.device_tracker import (
     DOMAIN, PLATFORM_SCHEMA, DeviceScanner)
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
 
@@ -33,6 +33,7 @@ PLATFORM_SCHEMA = vol.All(
     cv.has_at_least_one_key(CONF_PASSWORD, CONF_PUB_KEY, CONF_SSH_KEY),
     PLATFORM_SCHEMA.extend({
         vol.Required(CONF_HOST): cv.string,
+        vol.Optional(CONF_PORT): cv.port,
         vol.Required(CONF_USERNAME): cv.string,
         vol.Optional(CONF_PROTOCOL, default='ssh'):
             vol.In(['ssh', 'telnet']),
@@ -105,6 +106,7 @@ class AsusWrtDeviceScanner(DeviceScanner):
     def __init__(self, config):
         """Initialize the scanner."""
         self.host = config[CONF_HOST]
+        self.port = config.get(CONF_PORT, None)
         self.username = config[CONF_USERNAME]
         self.password = config.get(CONF_PASSWORD, '')
         self.ssh_key = config.get('ssh_key', config.get('pub_key', ''))
@@ -177,7 +179,7 @@ class AsusWrtDeviceScanner(DeviceScanner):
 
         ssh = pxssh.pxssh()
         try:
-            ssh.login(self.host, self.username, **self.ssh_secret)
+            ssh.login(self.host, self.username, port=self.port, **self.ssh_secret)
         except exceptions.EOF as err:
             _LOGGER.error('Connection refused. Is SSH enabled?')
             return None
